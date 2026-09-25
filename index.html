@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIML Movie Recommendation Chatbot</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 600px;
+            height: 85vh;
+            background-color: #1e293b;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background-color: #334155;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #475569;
+        }
+
+        .chat-header h2 {
+            font-size: 1.2rem;
+            color: #38bdf8;
+        }
+
+        .chat-box {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            line-height: 1.4;
+            font-size: 0.95rem;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background-color: #0284c7;
+            color: white;
+            border-bottom-right-radius: 2px;
+        }
+
+        .bot-message {
+            align-self: flex-start;
+            background-color: #334155;
+            color: #f1f5f9;
+            border-bottom-left-radius: 2px;
+        }
+
+        .movie-card {
+            background: #0f172a;
+            border-left: 4px solid #38bdf8;
+            padding: 10px;
+            margin-top: 8px;
+            border-radius: 4px;
+        }
+
+        .movie-title {
+            font-weight: bold;
+            color: #38bdf8;
+        }
+
+        .movie-genre {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 4px;
+        }
+
+        .input-container {
+            display: flex;
+            padding: 15px;
+            background-color: #334155;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            background-color: #0f172a;
+            color: white;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: #38bdf8;
+        }
+
+        button {
+            padding: 12px 20px;
+            background-color: #0284c7;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: #0369a1;
+        }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">
+        <h2>🎬 AIML Movie Recommendation Chatbot</h2>
+    </div>
+    
+    <div class="chat-box" id="chatBox">
+        <div class="message bot-message">
+            Hello! I am your AI movie assistant. Describe what kind of movie you'd like to watch (e.g., "space mission", "action superhero", or "love story").
+        </div>
+    </div>
+
+    <div class="input-container">
+        <input type="text" id="userInput" placeholder="Type your movie interest..." onkeypress="handleKeyPress(event)">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+<script>
+    // Movie Dataset
+    const movies = [
+        { title: "Interstellar", genre: "Sci-Fi / Adventure", keywords: ["space", "astronaut", "black hole", "future", "wormhole", "planet", "galaxy", "science", "physics", "universe"], desc: "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival." },
+        { title: "Inception", genre: "Sci-Fi / Action", keywords: ["dream", "mind", "subconscious", "thief", "heist", "reality", "action", "architecture"], desc: "A thief who steals corporate secrets through the use of dream-sharing technology is given the task of planting an idea." },
+        { title: "The Dark Knight", genre: "Action / Crime", keywords: ["batman", "joker", "gotham", "hero", "villain", "crime", "dark", "action", "justice"], desc: "When the menace known as the Joker wreaks havoc on Gotham, Batman must accept one of the greatest tests." },
+        { title: "The Martian", genre: "Sci-Fi / Drama", keywords: ["mars", "astronaut", "space", "survival", "science", "botany", "stranded", "red planet"], desc: "An astronaut becomes stranded on Mars after his team assumes him dead, and must rely on his ingenuity to signal to Earth." },
+        { title: "The Notebook", genre: "Romance / Drama", keywords: ["love", "romance", "relationship", "couple", "passion", "drama", "emotional", "story"], desc: "A poor yet passionate young man falls in love with a rich young woman, giving her a sense of freedom." },
+        { title: "Avengers: Endgame", genre: "Action / Sci-Fi", keywords: ["superhero", "marvel", "avengers", "action", "thano", "time travel", "hero", "fight", "universe"], desc: "After devastating events, the universe is in ruins. With the help of remaining allies, the Avengers assemble once more." },
+        { title: "Titanic", genre: "Romance / Drama", keywords: ["ship", "ocean", "love", "romance", "history", "disaster", "sinking", "tragedy"], desc: "A seventeen-year-old aristocrat falls in love with a kind but poor artist aboard the luxurious, ill-fated R.M.S. Titanic." }
+    ];
+
+    function handleKeyPress(event) {
+        if (event.key === "Enter") {
+            sendMessage();
+        }
+    }
+
+    function sendMessage() {
+        const inputField = document.getElementById("userInput");
+        const query = inputField.value.trim();
+
+        if (query === "") return;
+
+        // Display user message
+        appendMessage(query, "user-message");
+        inputField.value = "";
+
+        // Process recommendation
+        setTimeout(() => {
+            const recommendations = getRecommendations(query);
+            appendBotResponse(recommendations);
+        }, 500);
+    }
+
+    function appendMessage(text, className) {
+        const chatBox = document.getElementById("chatBox");
+        const msgDiv = document.createElement("div");
+        msgDiv.className = `message ${className}`;
+        msgDiv.innerText = text;
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // Recommendation logic: Keyword Matching & Scoring Algorithm
+    function getRecommendations(userQuery) {
+        const tokens = userQuery.toLowerCase().split(/\W+/);
+        
+        let scoredMovies = movies.map(movie => {
+            let score = 0;
+            // Check keyword matches
+            movie.keywords.forEach(keyword => {
+                tokens.forEach(token => {
+                    if (token.length > 2 && keyword.includes(token)) {
+                        score += 2;
+                    }
+                });
+            });
+
+            // Check genre matches
+            if (userQuery.toLowerCase().includes(movie.genre.toLowerCase())) {
+                score += 3;
+            }
+
+            return { ...movie, score };
+        });
+
+        // Filter out zero-score matches and sort by score descending
+        scoredMovies = scoredMovies.filter(m => m.score > 0).sort((a, b) => b.score - a.score);
+        return scoredMovies.slice(0, 3); // Return top 3 matches
+    }
+
+    function appendBotResponse(recommendations) {
+        const chatBox = document.getElementById("chatBox");
+        const msgDiv = document.createElement("div");
+        msgDiv.className = "message bot-message";
+
+        if (recommendations.length === 0) {
+            msgDiv.innerText = "Sorry, I couldn't find any relevant movies. Try searching for terms like 'space', 'romance', 'superhero', or 'action'.";
+        } else {
+            let html = "Here are the top movie recommendations for you:<br>";
+            recommendations.forEach(movie => {
+                html += `
+                    <div class="movie-card">
+                        <div class="movie-title">🎬 ${movie.title}</div>
+                        <div class="movie-genre">${movie.genre}</div>
+                        <div>${movie.desc}</div>
+                    </div>
+                `;
+            });
+            msgDiv.innerHTML = html;
+        }
+
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+</script>
+
+</body>
+</html>
